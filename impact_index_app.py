@@ -1,0 +1,568 @@
+import io
+import textwrap
+
+import streamlit as st
+import pandas as pd
+
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+
+
+# ------------- CONFIG AND QUESTIONS -------------
+
+CC_QUESTIONS = [
+    "Scope of change",
+    "Number of impacted employees",
+    "Variation in groups that are impacted",
+    "Type of change",
+    "Degree of process change",
+    "Degree of technology and system change",
+    "Degree of job role changes",
+    "Degree of organization restructuring",
+    "Amount of change overall",
+    "Impact on employee compensation",
+    "Reduction in total staffing levels",
+    "Timeframe for change",
+]
+
+OA_QUESTIONS = [
+    "Perceived need for change among employees and managers",
+    "Impact of past changes on employees",
+    "Change capacity (how much else is changing)",
+    "Past changes (success and management quality)",
+    "Shared vision and direction for the organization",
+    "Resources and funding availability",
+    "Culture and responsiveness to change",
+    "Organizational reinforcement (how change is rewarded)",
+    "Leadership style and power distribution",
+    "Senior management change competency",
+    "Middle management change competency",
+    "Employee change competency",
+]
+
+GROUP_ASPECTS = [
+    "Processes",
+    "Systems",
+    "Tools",
+    "Job role",
+    "Critical behaviors",
+    "Mindset / Attitude / Beliefs",
+    "Reporting structure",
+    "Performance reviews",
+    "Compensation",
+    "Location",
+]
+
+
+# ------------- HELPER FUNCTIONS -------------
+
+def compute_cc_score(cc_answers):
+    """Sum scores for Change Characteristics and compute percentage."""
+    total = sum(cc_answers.values())
+    max_score = len(cc_answers) * 5
+    percent = (total / max_score * 100) if max_score > 0 else 0
+    return total, max_score, percent
+
+
+def compute_oa_score(oa_answers):
+    """Sum scores for Organizational Attributes and compute percentage."""
+    total = sum(oa_answers.values())
+    max_score = len(oa_answers) * 5
+    percent = (total / max_score * 100) if max_score > 0 else 0
+    return total, max_score, percent
+
+
+def compute_group_impact(groups_data):
+    """
+    For each group:
+      - count of aspects with score > 0
+      - degree of impact on a 0–5 scale, matching the Excel formula:
+        IF(SUM(G:P)>0, (SUM(G:P)/50)*5, 0)
+    """
+    results = []
+    for g in groups_data:
+        scores = [g["aspects"].get(a, 0) for a in GROUP_ASPECTS]
+        total_score = sum(scores)
+        aspects_impacted = sum(1 for s in scores if s > 0)
+        if total_score > 0:
+            degree_impact = (total_score / 50.0) * 5.0
+        else:
+            degree_impact = 0.0
+
+        results.append({
+            "Group name": g["name"],
+            "Employees": g["employees"],
+            "Aspects impacted (out of 10)": aspects_impacted,
+            "Degree of impact (0-5)": round(degree_impact, 2),
+        })
+
+    if not results:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(results)
+    # Make the row index start at 1 instead of 0 for display
+    df.index = range(1, len(df) + 1)
+    df.index.name = "#"
+    return df
+
+
+def build_pdf_summary(
+    project_name,
+    sponsor_name,
+    org_name,
+    assessment_owner,
+    project_desc,
+    cc_total,
+    cc_max,
+    cc_pct,
+    oa_total,
+    oa_max,
+    oa_pct,
+    cc_answers,
+    oa_answers,
+    group_df,
+):
+    """
+    Build a summary-only PDF including:
+      - Project information
+      - CC & OA summary
+      - CC & OA items with score >= 3
+      - High-impact groups (Degree of impact >= 3)
+    """
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    def draw_wrapped(text, x, y, max_width, leading=12, font_name="Helvetica", font_size=10):
+        """Draw wrapped text and return updated y position."""
+        c.setFont(font_name, font_size)
+        for line in textwrap.wrap(text, width=max_width):
+            c.drawString(x, y, line)
+            y -= leading
+        return y
+
+    y = height - 50
+
+    # Title
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y, "Change Impact Assessment – Summary")
+    y -= 30
+
+    # Project information
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Project information")
+    y -= 18
+
+    c.setFont("Helvetica", 10)
+    if project_name:
+        y = draw_wrapped(f"Project: {project_name}", 60, y, 90)
+    if org_name:
+        y = draw_wrapped(f"Organization / Dept: {org_name}", 60, y, 90)
+    if sponsor_name:
+        y = draw_wrapped(f"Sponsor: {sponsor_name}", 60, y, 90)
+    if assessment_owner:
+        y = draw_wrapped(f"Assessment completed by: {assessment_owner}", 60, y, 90)
+
+    if project_desc:
+        y -= 6
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(50, y, "Change description")
+        y -= 14
+        y = draw_wrapped(project_desc, 60, y, 95)
+
+    y -= 10
+
+    # CC summary
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Change Characteristics (CC)")
+    y -= 16
+    c.setFont("Helvetica", 10)
+    c.drawString(
+        60, y,
+        f"Total CC score: {cc_total} / {cc_max} ({cc_pct:.1f}%)"
+    )
+    y -= 18
+
+    # CC items with score >= 3
+    cc_high = []
+    for i, q in enumerate(CC_QUESTIONS, start=1):
+        score = cc_answers.get(f"CC_{i}", 0)
+        if score >= 3:
+            cc_high.append((i, q, score))
+
+    if cc_high:
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(60, y, "Areas of higher change impact (CC items scored 3 or above):")
+        y -= 14
+        c.setFont("Helvetica", 10)
+        for i, q, score in cc_high:
+            line = f"- [{score}] {i}) {q}"
+            y = draw_wrapped(line, 70, y, 90)
+            if y < 70:
+                c.showPage()
+                y = height - 50
+    else:
+        c.setFont("Helvetica", 10)
+        c.drawString(60, y, "No CC items scored 3 or above.")
+        y -= 16
+
+    y -= 6
+
+    # OA summary
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Organizational Attributes (OA)")
+    y -= 16
+    c.setFont("Helvetica", 10)
+    c.drawString(
+        60, y,
+        f"Total OA score: {oa_total} / {oa_max} ({oa_pct:.1f}%)"
+    )
+    y -= 18
+
+    # OA items with score >= 3 (higher risk)
+    oa_high = []
+    for i, q in enumerate(OA_QUESTIONS, start=1):
+        score = oa_answers.get(f"OA_{i}", 0)
+        if score >= 3:
+            oa_high.append((i, q, score))
+
+    if oa_high:
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(60, y, "Areas of higher organizational risk (OA items scored 3 or above):")
+        y -= 14
+        c.setFont("Helvetica", 10)
+        for i, q, score in oa_high:
+            line = f"- [{score}] {i}) {q}"
+            y = draw_wrapped(line, 70, y, 90)
+            if y < 70:
+                c.showPage()
+                y = height - 50
+    else:
+        c.setFont("Helvetica", 10)
+        c.drawString(60, y, "No OA items scored 3 or above.")
+        y -= 16
+
+    y -= 6
+
+    # Group impact summary – high-impact groups only
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Group Impact Summary")
+    y -= 16
+    c.setFont("Helvetica", 10)
+
+    if group_df is not None and not group_df.empty:
+        high_groups = group_df[group_df["Degree of impact (0-5)"] >= 3].copy()
+        high_groups = high_groups.sort_values(
+            by="Degree of impact (0-5)",
+            ascending=False
+        )
+
+        if not high_groups.empty:
+            c.drawString(
+                60, y,
+                "High-impact groups (Degree of impact 3 or above):"
+            )
+            y -= 14
+            for idx, row in high_groups.iterrows():
+                line = (
+                    f"- {row['Group name']} "
+                    f"(Employees: {row['Employees']}, "
+                    f"Degree of impact: {row['Degree of impact (0-5)']})"
+                )
+                y = draw_wrapped(line, 70, y, 90)
+                if y < 70:
+                    c.showPage()
+                    y = height - 50
+        else:
+            c.drawString(
+                60, y,
+                "No groups scored a Degree of impact of 3 or above yet."
+            )
+            y -= 16
+    else:
+        c.drawString(60, y, "No group impact data entered.")
+        y -= 16
+
+    # Close out
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+
+
+# ------------- STREAMLIT APP -------------
+
+st.set_page_config(
+    page_title="Prosci Impact Index – Impact Assessment",
+    layout="wide"
+)
+
+# --- Custom colors: pink bars + blue headings ---
+st.markdown(
+    """
+    <style>
+    /* Headings */
+    h1, h2, h3, h4, h5, h6 {
+        color: #06AFE6 !important;
+    }
+
+    /* Buttons */
+    .stButton>button {
+        background-color: #DA10AB !important;
+        border-color: #DA10AB !important;
+        color: white !important;
+    }
+
+    /* Slider thumb */
+    .stSlider [role="slider"] {
+        background-color: #DA10AB !important;
+        border-color: #DA10AB !important;
+    }
+
+    /* Filled track (blue → pink gradient) */
+    .stSlider [data-baseweb="slider"] > div > div > div:nth-child(2) {
+        background: linear-gradient(90deg, #06AFE6 0%, #DA10AB 100%) !important;
+    }
+
+    /* Unfilled track (light grey) */
+    .stSlider [data-baseweb="slider"] > div > div > div:nth-child(3) {
+        background-color: #E0E0E0 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+st.title("Prosci Impact Index – Impact Assessment App")
+
+st.markdown(
+    """
+    This app is a simplified, Excel-free interface for the Prosci Impact Index.
+    Fill in the sections below to assess change risk and group-level impact.
+    """
+)
+
+# ---------- SECTION 1: PROJECT BASICS ----------
+
+st.header("1. Project information")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    project_name = st.text_input("Project name", value="")
+    sponsor_name = st.text_input("Primary sponsor name", value="")
+
+with col2:
+    org_name = st.text_input("Organization or department", value="")
+    assessment_owner = st.text_input("Assessment completed by", value="")
+
+project_desc = st.text_area(
+    "Short description of the change",
+    placeholder="Describe the change at a high level (what is changing and why)."
+)
+
+st.markdown("---")
+
+# ---------- SECTION 2: CHANGE CHARACTERISTICS ----------
+
+st.header("2. Change Characteristics (1–5 scale)")
+
+st.markdown(
+    "Rate each item from **1 (low impact)** to **5 (high impact)** based on the characteristics of this change."
+)
+
+cc_answers = {}
+
+for i, q in enumerate(CC_QUESTIONS, start=1):
+    cc_answers[f"CC_{i}"] = st.slider(
+        f"{i}) {q}",
+        min_value=1,
+        max_value=5,
+        value=3,
+        step=1,
+    )
+
+cc_total, cc_max, cc_pct = compute_cc_score(cc_answers)
+
+st.subheader("Change Characteristics summary")
+st.write(f"Total CC score: **{cc_total}** out of {cc_max}")
+st.write(f"Percent of maximum: **{cc_pct:.1f}%**")
+
+st.markdown("---")
+
+# ---------- SECTION 3: ORGANIZATIONAL ATTRIBUTES ----------
+
+st.header("3. Organizational Attributes (1–5 scale)")
+
+st.markdown(
+    "Rate each item from **1 (low risk, more favorable)** to **5 (high risk, less favorable)** "
+    "based on how the organization currently operates."
+)
+
+oa_answers = {}
+
+for i, q in enumerate(OA_QUESTIONS, start=1):
+    oa_answers[f"OA_{i}"] = st.slider(
+        f"{i}) {q}",
+        min_value=1,
+        max_value=5,
+        value=3,
+        step=1,
+    )
+
+oa_total, oa_max, oa_pct = compute_oa_score(oa_answers)
+
+st.subheader("Organizational Attributes summary")
+st.write(f"Total OA score: **{oa_total}** out of {oa_max}")
+st.write(f"Percent of maximum: **{oa_pct:.1f}%**")
+
+st.markdown("---")
+
+# ---------- SECTION 4: GROUP IMPACT INVENTORY ----------
+
+st.header("4. Group Impact Inventory")
+
+st.markdown(
+    """
+For each impacted group, capture how strongly the change affects different aspects of their work.
+Use a **0–5** scale where:
+
+- 0 = no impact  
+- 1 = very low impact  
+- 5 = extremely high impact
+"""
+)
+
+num_groups = st.number_input(
+    "How many groups would you like to assess?",
+    min_value=1,
+    max_value=24,
+    value=3,
+    step=1,
+)
+
+groups_data = []
+
+for i in range(int(num_groups)):
+    st.subheader(f"Group {i + 1}")
+    with st.expander(f"Details for group {i + 1}", expanded=True if i == 0 else False):
+        g_name = st.text_input(
+            "Group name",
+            key=f"group_name_{i}",
+            placeholder="Example: Customer Service, Finance, IT Operations"
+        )
+        g_employees = st.number_input(
+            "Number of employees in this group",
+            min_value=0,
+            value=0,
+            step=1,
+            key=f"group_employees_{i}",
+        )
+
+        st.markdown("### Impact on aspects (0–5)")
+        aspect_scores = {}
+        for aspect in GROUP_ASPECTS:
+            aspect_scores[aspect] = st.slider(
+                aspect,
+                min_value=0,
+                max_value=5,
+                value=0,
+                step=1,
+                key=f"group_{i}_{aspect}",
+            )
+
+        groups_data.append({
+            "name": g_name,
+            "employees": g_employees,
+            "aspects": aspect_scores,
+        })
+
+group_df = compute_group_impact(groups_data)
+
+st.subheader("Group impact summary")
+if group_df.empty:
+    st.info("Fill in at least one group with some non-zero impact scores to see results.")
+else:
+    st.dataframe(group_df, use_container_width=True)
+
+    # ---------- EXCEL EXPORT (Group Impact + OA) ----------
+    excel_buffer = io.BytesIO()
+    with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+        group_df.to_excel(writer, sheet_name="Group Impact")
+        oa_summary_df = pd.DataFrame({
+            "Metric": ["Total OA score", "Max OA score", "Percent of max"],
+            "Value": [oa_total, oa_max, oa_pct],
+        })
+        oa_details_df = pd.DataFrame({
+            "Question": OA_QUESTIONS,
+            "Score": list(oa_answers.values()),
+        })
+        oa_summary_df.to_excel(writer, sheet_name="OA Summary", index=False)
+        oa_details_df.to_excel(writer, sheet_name="OA Details", index=False)
+    excel_buffer.seek(0)
+
+    st.download_button(
+        label="Download impact results as Excel",
+        data=excel_buffer,
+        file_name="impact_results.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+st.markdown("---")
+
+# ---------- SECTION 5: OVERALL SUMMARY & PDF EXPORT ----------
+
+st.header("5. Overall impact summary")
+
+col_a, col_b = st.columns(2)
+
+with col_a:
+    st.subheader("Change risk scores")
+    st.write(f"- Change Characteristics: **{cc_total} / {cc_max}** ({cc_pct:.1f}%)")
+    st.write(f"- Organizational Attributes: **{oa_total} / {oa_max}** ({oa_pct:.1f}%)")
+
+with col_b:
+    st.subheader("Top impacted groups")
+    if not group_df.empty:
+        top_groups = group_df.sort_values(
+            by="Degree of impact (0-5)",
+            ascending=False
+        ).head(5)
+        st.write(top_groups[["Group name", "Employees", "Degree of impact (0-5)"]])
+    else:
+        st.write("No group impact data yet.")
+
+# PDF summary (OA + Group Impact)
+pdf_buffer = build_pdf_summary(
+    project_name=project_name,
+    sponsor_name=sponsor_name,
+    org_name=org_name,
+    assessment_owner=assessment_owner,
+    project_desc=project_desc,
+    cc_total=cc_total,
+    cc_max=cc_max,
+    cc_pct=cc_pct,
+    oa_total=oa_total,
+    oa_max=oa_max,
+    oa_pct=oa_pct,
+    cc_answers=cc_answers,
+    oa_answers=oa_answers,
+    group_df=group_df,
+)
+
+st.download_button(
+    label="Download PDF summary (OA + Group Impact)",
+    data=pdf_buffer,
+    file_name="impact_summary.pdf",
+    mime="application/pdf",
+)
+
+st.markdown(
+    """
+You can use these scores to determine where targeted change management activity is most needed:
+- Higher **CC** and **OA** scores indicate higher overall change risk.  
+- Groups with higher **Degree of impact** and many **Aspects impacted** will likely need more support and tailored change plans.
+"""
+)
