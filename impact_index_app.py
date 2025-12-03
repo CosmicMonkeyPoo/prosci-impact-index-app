@@ -620,12 +620,19 @@ else:
         oa_details_df.to_excel(writer, sheet_name="OA Details", index=False)
     excel_buffer.seek(0)
 
-    st.download_button(
-        label="Download impact results as Excel",
-        data=excel_buffer,
-        file_name="impact_results.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+    excel_filename = (
+    f"{project_name.strip().replace(' ', '_')}_impact_results.xlsx"
+    if project_name else
+    "impact_results.xlsx"
+)
+
+st.download_button(
+    label="Download impact results as Excel",
+    data=excel_buffer,
+    file_name=excel_filename,
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+)
+
 
 st.markdown("---")
 
@@ -672,10 +679,16 @@ pdf_buffer = build_pdf_summary(
 # Convert buffer to raw bytes for Streamlit download
 pdf_bytes = pdf_buffer.getvalue()
 
+summary_filename = (
+    f"{project_name.strip().replace(' ', '_')}_impact_summary.pdf"
+    if project_name else
+    "impact_summary.pdf"
+)
+
 st.download_button(
     label="Download PDF Summary",
     data=pdf_bytes,
-    file_name="impact_summary.pdf",
+    file_name=summary_filename,
     mime="application/pdf"
 )
 
@@ -756,9 +769,16 @@ if st.session_state.get("change_plan"):
     plan_pdf_buffer = build_change_plan_pdf(project_info, st.session_state["change_plan"])
     plan_pdf_bytes = plan_pdf_buffer.getvalue()
 
-    st.download_button(
-        label="Download Change Plan as PDF",
-        data=plan_pdf_bytes,
-        file_name="change_plan.pdf",
-        mime="application/pdf",
-    )
+    plan_filename = (
+    f"{project_name.strip().replace(' ', '_')}_change_plan.pdf"
+    if project_name else
+    "change_plan.pdf"
+)
+
+st.download_button(
+    label="Download Change Plan as PDF",
+    data=plan_pdf_bytes,
+    file_name=plan_filename,
+    mime="application/pdf",
+)
+
