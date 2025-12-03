@@ -419,33 +419,79 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Headings */
-    h1, h2, h3, h4, h5, h6 {
-        color: #06AFE6 !important;
+    /* ------------------------------
+       GLOBAL DARK THEME BACKGROUND
+       ------------------------------ */
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
+        background-color: #000000 !important; /* Black background */
+        color: #FFFFFF !important; /* Default text white */
     }
 
-    /* Buttons */
+    /* Sidebar background */
+    [data-testid="stSidebar"] {
+        background-color: #111111 !important;
+    }
+
+    /* ------------------------------
+       TEXT COLORS
+       ------------------------------ */
+    h1, h2, h3, h4, h5, h6 {
+        color: #06AFE6 !important;   /* Blue headings */
+    }
+
+    label, p, span, div {
+        color: #FFFFFF !important;   /* Make text white */
+    }
+
+    /* ------------------------------
+       BUTTONS — keep your pink theme
+       ------------------------------ */
     .stButton>button {
         background-color: #DA10AB !important;
         border-color: #DA10AB !important;
         color: white !important;
     }
 
-    /* Slider thumb */
+    /* ------------------------------
+       SLIDERS — blue → pink gradient
+       ------------------------------ */
     .stSlider [role="slider"] {
         background-color: #DA10AB !important;
         border-color: #DA10AB !important;
     }
 
-    /* Filled track (blue → pink gradient) */
+    /* Filled slider track */
     .stSlider [data-baseweb="slider"] > div > div > div:nth-child(2) {
         background: linear-gradient(90deg, #06AFE6 0%, #DA10AB 100%) !important;
     }
 
-    /* Unfilled track (light grey) */
+    /* Unfilled slider track */
     .stSlider [data-baseweb="slider"] > div > div > div:nth-child(3) {
-        background-color: #E0E0E0 !important;
+        background-color: #333333 !important;
     }
+
+    /* ------------------------------
+       DATAFRAME TABLE STYLING
+       ------------------------------ */
+    .stDataFrame, .stDataFrame tbody, .stDataFrame th, .stDataFrame td {
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+        width: 12px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #222222;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #444444;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #666666;
+    }
+
     </style>
     """,
     unsafe_allow_html=True,
