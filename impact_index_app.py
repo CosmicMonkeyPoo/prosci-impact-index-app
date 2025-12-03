@@ -4,6 +4,9 @@ import textwrap
 import streamlit as st
 import pandas as pd
 
+import json
+from openai import OpenAI
+
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
@@ -55,6 +58,55 @@ GROUP_ASPECTS = [
 
 
 # ------------- HELPER FUNCTIONS -------------
+
+def generate_change_plan_with_gpt(project_info, group_impacts, oa_impacts=None):
+    """
+    Call the OpenAI API to generate a high-level change plan
+    based on project info and impact variations.
+    """
+    api_key = st.secrets.get("OPENAI_API_KEY")
+    if not api_key:
+        st.error("OpenAI API key is not configured. Please set OPENAI_API_KEY in Streamlit secrets.")
+        return None
+
+    client = OpenAI(api_key=api_key)
+
+    payload = {
+        "project_info": project_info,
+        "group_impacts": group_impacts,
+        "oa_impacts": oa_impacts,
+    }
+
+    system_msg = (
+        "You are an expert change management consultant using the Prosci methodology. "
+        "You specialize in translating change impact assessments into practical, "
+        "role-based change plans for complex organizations."
+    )
+
+    user_msg = (
+        "Using the following change impact assessment data, create a concise, high-level change plan. "
+        "The plan should:\n"
+        "- Summarize the overall change and key drivers.\n"
+        "- Highlight which groups are most impacted and how.\n"
+        "- Recommend tailored change tactics for each group based on their impact level.\n"
+        "- Organize tactics into phases (for example: Awareness, Desire, Knowledge, Ability, Reinforcement).\n"
+        "- Be written so that a project sponsor or change manager could use it to guide planning.\n\n"
+        f"Here is the structured data (JSON):\n{json.dumps(payload, indent=2)}"
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",  # you can change the model later if you want
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.4,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        st.error(f"Error calling OpenAI API: {e}")
+        return None
 
 def compute_cc_score(cc_answers):
     """Sum scores for Change Characteristics and compute percentage."""
@@ -553,11 +605,55 @@ pdf_buffer = build_pdf_summary(
 )
 
 st.download_button(
-    label="Download PDF summary (OA + Group Impact)",
-    data=pdf_buffer,
+    label="Download PDF Summary",
+    data=pdf_bytes,
     file_name="impact_summary.pdf",
-    mime="application/pdf",
+    mime="application/pdf"
 )
+
+# ------------------------------
+# AI-Generated Change Plan section
+# ------------------------------
+st.markdown("---")
+st.subheader("AI-Generated Change Plan (Optional)")
+
+st.markdown(
+    "Click the button below to send this impact assessment to an AI assistant and "
+    "generate a high-level change plan that accounts for the different groups and their impact levels."
+)
+
+# Safely convert existing summaries (if they exist) into simple Python structures
+group_impacts = None
+if "group_summary_df" in locals():
+    try:
+        group_impacts = group_summary_df.to_dict(orient="records")
+    except Exception:
+        group_impacts = None
+
+oa_impacts = None
+if "oa_summary_df" in locals():
+    try:
+        oa_impacts = oa_summary_df.to_dict(orient="records")
+    except Exception:
+        oa_impacts = None
+
+# Basic placeholder project info; you can wire real fields later if you want
+project_info = {
+    "note": "Project-level details are not wired into this section yet. The plan is based mainly on group and OA impact patterns."
+}
+
+if st.button("Generate AI Change Plan"):
+    with st.spinner("Generating change plan..."):
+        plan = generate_change_plan_with_gpt(
+            project_info=project_info,
+            group_impacts=group_impacts,
+            oa_impacts=oa_impacts,
+        )
+
+    if plan:
+        st.success("Change plan generated.")
+        st.markdown("### Recommended Change Plan")
+        st.write(plan)
 
 st.markdown(
     """
