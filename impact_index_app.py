@@ -332,6 +332,80 @@ def build_pdf_summary(
     buffer.seek(0)
     return buffer
 
+def build_change_plan_pdf(project_info, plan_text):
+    """
+    Build a PDF containing:
+      - Project information (if available)
+      - The AI-generated change plan text
+    """
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    def draw_wrapped(text, x, y, max_width, leading=12, font_name="Helvetica", font_size=10):
+        """Draw wrapped text and return updated y position."""
+        c.setFont(font_name, font_size)
+        for line in textwrap.wrap(text, width=max_width):
+            c.drawString(x, y, line)
+            y -= leading
+        return y
+
+    y = height - 50
+
+    # Title
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y, "AI-Generated Change Plan")
+    y -= 30
+
+    # Project info (if available)
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Project information")
+    y -= 18
+    c.setFont("Helvetica", 10)
+
+    if project_info:
+        if project_info.get("project_name"):
+            y = draw_wrapped(f"Project: {project_info['project_name']}", 60, y, 90)
+        if project_info.get("organization_name"):
+            y = draw_wrapped(f"Organization / Dept: {project_info['organization_name']}", 60, y, 90)
+        if project_info.get("sponsor_name"):
+            y = draw_wrapped(f"Sponsor: {project_info['sponsor_name']}", 60, y, 90)
+        if project_info.get("assessment_owner"):
+            y = draw_wrapped(f"Assessment completed by: {project_info['assessment_owner']}", 60, y, 90)
+
+        if project_info.get("description"):
+            y -= 6
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(50, y, "Change description")
+            y -= 14
+            y = draw_wrapped(project_info["description"], 60, y, 95)
+
+    y -= 10
+
+    # Plan body
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Recommended Change Plan")
+    y -= 18
+
+    c.setFont("Helvetica", 10)
+    if not plan_text:
+        y = draw_wrapped("No plan text generated.", 60, y, 95)
+    else:
+        # Allow for long text with page breaks
+        for paragraph in plan_text.split("\n"):
+            paragraph = paragraph.strip()
+            if not paragraph:
+                y -= 6
+                continue
+            y = draw_wrapped(paragraph, 60, y, 95)
+            if y < 70:
+                c.showPage()
+                y = height - 50
+
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+    return buffer
 
 
 # ------------- STREAMLIT APP -------------
@@ -624,6 +698,10 @@ st.markdown(
     "generate a high-level change plan that accounts for the different groups and their impact levels."
 )
 
+# Ensure a place in session_state for the plan
+if "change_plan" not in st.session_state:
+    st.session_state["change_plan"] = None
+
 # Build group impacts structure from the actual group_df
 group_impacts = None
 if group_df is not None and not group_df.empty:
@@ -656,6 +734,7 @@ project_info = {
     "description": project_desc,
 }
 
+# Button to generate the plan
 if st.button("Generate AI Change Plan"):
     with st.spinner("Generating change plan..."):
         plan = generate_change_plan_with_gpt(
@@ -665,9 +744,21 @@ if st.button("Generate AI Change Plan"):
         )
 
     if plan:
+        st.session_state["change_plan"] = plan
         st.success("Change plan generated.")
-        st.markdown("### Recommended Change Plan")
-        st.write(plan)
 
+# If we have a saved plan, display it and offer PDF download
+if st.session_state.get("change_plan"):
+    st.markdown("### Recommended Change Plan")
+    st.write(st.session_state["change_plan"])
 
+    # Build PDF of the AI change plan
+    plan_pdf_buffer = build_change_plan_pdf(project_info, st.session_state["change_plan"])
+    plan_pdf_bytes = plan_pdf_buffer.getvalue()
 
+    st.download_button(
+        label="Download Change Plan as PDF",
+        data=plan_pdf_bytes,
+        file_name="change_plan.pdf",
+        mime="application/pdf",
+    )
