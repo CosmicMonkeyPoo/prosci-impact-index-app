@@ -421,36 +421,50 @@ st.markdown(
     """
     <style>
 
-    /* GLOBAL BACKGROUND + TEXT */
+    /* --------------------------------------------------
+       GLOBAL BACKGROUND + TEXT
+    -------------------------------------------------- */
     html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
         background-color: #000000 !important;
         color: #FFFFFF !important;
     }
 
-    /* HEADER / TOP BAR */
+    /* --------------------------------------------------
+       TOP HEADER
+    -------------------------------------------------- */
     [data-testid="stHeader"] {
-        background-color: #DA10AB !important;   /* Pink header */
+        background-color: #DA10AB !important;
     }
     [data-testid="stHeader"]::before {
         box-shadow: none !important;
     }
 
-    /* SIDEBAR */
+    /* --------------------------------------------------
+       SIDEBAR
+    -------------------------------------------------- */
     [data-testid="stSidebar"] {
         background-color: #111111 !important;
     }
 
-    /* HEADINGS */
-    h1, h2, h3, h4, h5, h6 {
-        color: #06AFE6 !important;   /* Blue headings */
+    /* --------------------------------------------------
+       HEADINGS + TEXT
+    -------------------------------------------------- */
+    h1, h2, h3, h4, h5, h6 { color: #06AFE6 !important; }
+    p, span, label, div, strong, em { color: #FFFFFF !important; }
+
+    /* Placeholder / helper text */
+    ::placeholder {
+        color: #BBBBBB !important;
+        opacity: 1 !important;
+    }
+    .stTextInput input::placeholder,
+    textarea::placeholder {
+        color: #BBBBBB !important;
     }
 
-    /* GENERAL TEXT */
-    p, span, label {
-        color: #FFFFFF !important;
-    }
-
-    /* TEXT INPUTS / TEXTAREA / NUMBER INPUT */
+    /* --------------------------------------------------
+       INPUT FIELDS
+    -------------------------------------------------- */
     input[type="text"],
     input[type="number"],
     textarea,
@@ -461,102 +475,97 @@ st.markdown(
         border: 1px solid #444444 !important;
         border-radius: 6px !important;
     }
-
-    input[type="text"]:focus,
-    input[type="number"]:focus,
-    textarea:focus,
-    .stTextInput>div>div>input:focus,
-    .stTextArea>div>textarea:focus {
+    input:focus, textarea:focus {
         border-color: #DA10AB !important;
         outline: none !important;
     }
 
-    /* BUTTONS */
+    /* --------------------------------------------------
+       BUTTONS
+    -------------------------------------------------- */
     .stButton>button,
     button[kind="primary"] {
-        background-color: #DA10AB !important;   /* Pink */
-        color: #FFFFFF !important;              /* White text */
-        border: 1px solid #DA10AB !important;
-        border-radius: 6px !important;
-    }
-
-    button[kind="secondary"] {
-        background-color: #333333 !important;
+        background-color: #DA10AB !important;
         color: #FFFFFF !important;
         border: 1px solid #DA10AB !important;
         border-radius: 6px !important;
     }
-
-    .stButton>button:hover,
-    button[kind="primary"]:hover {
-        background-color: #e53abb !important;   /* Lighter pink on hover */
+    .stButton>button:hover {
+        background-color: #E53ABB !important;
     }
 
-    /* SLIDERS – blue → pink gradient track */
+    /* --------------------------------------------------
+       SLIDERS
+    -------------------------------------------------- */
     .stSlider [role="slider"] {
         background-color: #DA10AB !important;
         border-color: #DA10AB !important;
     }
-
     .stSlider [data-baseweb="slider"] > div > div > div:nth-child(2) {
         background: linear-gradient(90deg, #06AFE6 0%, #DA10AB 100%) !important;
     }
-
     .stSlider [data-baseweb="slider"] > div > div > div:nth-child(3) {
         background-color: #333333 !important;
     }
 
-    /* EXPANDERS (Group sections) */
-    details[data-testid="stExpander"] > summary {
+    /* --------------------------------------------------
+       EXPANDER HEADERS (group sections)
+    -------------------------------------------------- */
+    [data-testid="stExpander"] > details > summary {
         background-color: #111111 !important;
         color: #FFFFFF !important;
         border: 1px solid #444444 !important;
         border-radius: 6px !important;
-        padding: 0.5rem 0.75rem !important;
+        padding: 0.6rem 0.75rem !important;
     }
-
-    details[data-testid="stExpander"] > summary:hover {
+    [data-testid="stExpander"] > details > summary:hover {
         background-color: #222222 !important;
     }
 
-    details[data-testid="stExpander"] span {
-        color: #FFFFFF !important;
-    }
-
-    /* TABLES / DATAFRAMES */
+    /* --------------------------------------------------
+       TABLES (DataFrame + st.table)
+    -------------------------------------------------- */
+    /* Main container */
     [data-testid="stDataFrame"] {
         background-color: #000000 !important;
     }
 
-    [data-testid="stDataFrame"] div[role="grid"] {
+    /* Handsontable (Streamlit uses this under the hood) */
+    .stDataFrame div[role="grid"],
+    .stDataFrame div[role="rowgroup"],
+    .stDataFrame div[role="alert"],
+    .stDataFrame div,
+    .stDataFrame table {
         background-color: #111111 !important;
         color: #FFFFFF !important;
     }
 
-    [data-testid="stDataFrame"] th {
+    .stDataFrame th {
         background-color: #181818 !important;
         color: #FFFFFF !important;
+        border: 1px solid #333333 !important;
     }
-
-    [data-testid="stDataFrame"] td {
+    .stDataFrame td {
         background-color: #111111 !important;
         color: #FFFFFF !important;
+        border: 1px solid #333333 !important;
     }
 
+    /* st.table fallback */
     [data-testid="stTable"] table {
         background-color: #111111 !important;
         color: #FFFFFF !important;
     }
     [data-testid="stTable"] th {
         background-color: #181818 !important;
-        color: #FFFFFF !important;
     }
     [data-testid="stTable"] td {
         background-color: #111111 !important;
-        color: #FFFFFF !important;
     }
 
-    /* SCROLLBARS */
+    /* --------------------------------------------------
+       CUSTOM SCROLLBARS
+    -------------------------------------------------- */
     ::-webkit-scrollbar {
         width: 12px;
     }
