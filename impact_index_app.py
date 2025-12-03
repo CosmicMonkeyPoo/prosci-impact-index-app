@@ -586,7 +586,7 @@ with col_b:
     else:
         st.write("No group impact data yet.")
 
-# PDF summary (OA + Group Impact)
+# PDF summary (OA + Group Impact) – SUMMARY-ONLY PDF
 pdf_buffer = build_pdf_summary(
     project_name=project_name,
     sponsor_name=sponsor_name,
@@ -603,6 +603,9 @@ pdf_buffer = build_pdf_summary(
     oa_answers=oa_answers,
     group_df=group_df,
 )
+
+# Convert buffer to raw bytes for Streamlit download
+pdf_bytes = pdf_buffer.getvalue()
 
 st.download_button(
     label="Download PDF Summary",
@@ -622,24 +625,36 @@ st.markdown(
     "generate a high-level change plan that accounts for the different groups and their impact levels."
 )
 
-# Safely convert existing summaries (if they exist) into simple Python structures
+# Build group impacts structure from the actual group_df
 group_impacts = None
-if "group_summary_df" in locals():
-    try:
-        group_impacts = group_summary_df.to_dict(orient="records")
-    except Exception:
-        group_impacts = None
+if group_df is not None and not group_df.empty:
+    # Include the row index (#) as well for clarity
+    group_impacts = group_df.reset_index().to_dict(orient="records")
 
-oa_impacts = None
-if "oa_summary_df" in locals():
-    try:
-        oa_impacts = oa_summary_df.to_dict(orient="records")
-    except Exception:
-        oa_impacts = None
+# Build OA impacts structure from current OA scores
+oa_impacts = {
+    "summary": {
+        "total_oa_score": oa_total,
+        "max_oa_score": oa_max,
+        "percent_of_max": oa_pct,
+    },
+    "details": [
+        {
+            "id": i,
+            "question": q,
+            "score": oa_answers.get(f"OA_{i}", None),
+        }
+        for i, q in enumerate(OA_QUESTIONS, start=1)
+    ],
+}
 
-# Basic placeholder project info; you can wire real fields later if you want
+# Project info passed to the AI
 project_info = {
-    "note": "Project-level details are not wired into this section yet. The plan is based mainly on group and OA impact patterns."
+    "project_name": project_name,
+    "sponsor_name": sponsor_name,
+    "organization_name": org_name,
+    "assessment_owner": assessment_owner,
+    "description": project_desc,
 }
 
 if st.button("Generate AI Change Plan"):
@@ -662,3 +677,5 @@ You can use these scores to determine where targeted change management activity 
 - Groups with higher **Degree of impact** and many **Aspects impacted** will likely need more support and tailored change plans.
 """
 )
+
+
