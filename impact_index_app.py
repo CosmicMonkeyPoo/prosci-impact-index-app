@@ -296,44 +296,35 @@ def build_pdf_summary(
 
     y -= 6
 
-    # Group impact summary – high-impact groups only
+        # Group impact summary – all groups
     c.setFont("Helvetica-Bold", 12)
     c.drawString(50, y, "Group Impact Summary")
     y -= 16
     c.setFont("Helvetica", 10)
 
     if group_df is not None and not group_df.empty:
-        high_groups = group_df[group_df["Degree of impact (0-5)"] >= 3].copy()
-        high_groups = high_groups.sort_values(
-            by="Degree of impact (0-5)",
-            ascending=False
+        c.drawString(
+            60, y,
+            "Impacted groups and their degree of impact:"
         )
+        y -= 14
 
-        if not high_groups.empty:
-            c.drawString(
-                60, y,
-                "High-impact groups (Degree of impact 3 or above):"
+        # Iterate over all groups (already indexed 1,2,3... in the app)
+        for idx, row in group_df.iterrows():
+            line = (
+                f"- {row['Group name']} "
+                f"(Employees: {row['Employees']}, "
+                f"Aspects impacted: {row['Aspects impacted (out of 10)']}, "
+                f"Degree of impact: {row['Degree of impact (0-5)']})"
             )
-            y -= 14
-            for idx, row in high_groups.iterrows():
-                line = (
-                    f"- {row['Group name']} "
-                    f"(Employees: {row['Employees']}, "
-                    f"Degree of impact: {row['Degree of impact (0-5)']})"
-                )
-                y = draw_wrapped(line, 70, y, 90)
-                if y < 70:
-                    c.showPage()
-                    y = height - 50
-        else:
-            c.drawString(
-                60, y,
-                "No groups scored a Degree of impact of 3 or above yet."
-            )
-            y -= 16
+            y = draw_wrapped(line, 70, y, 90)
+            if y < 70:
+                c.showPage()
+                y = height - 50
     else:
         c.drawString(60, y, "No group impact data entered.")
         y -= 16
+
 
     # Close out
     c.showPage()
