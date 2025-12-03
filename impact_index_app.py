@@ -419,15 +419,31 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+
     /* ------------------------------
        GLOBAL DARK THEME BACKGROUND
        ------------------------------ */
     html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
-        background-color: #000000 !important; /* Black background */
-        color: #FFFFFF !important; /* Default text white */
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
     }
 
-    /* Sidebar background */
+    /* ------------------------------
+       STREAMLIT HEADER / NAV BAR
+       (The main white bar at the top)
+       ------------------------------ */
+    [data-testid="stHeader"] {
+        background-color: #DA10AB !important;   /* Pink header */
+    }
+
+    /* Also remove shadow so the pink looks clean */
+    [data-testid="stHeader"]::before {
+        box-shadow: none !important;
+    }
+
+    /* ------------------------------
+       SIDEBAR
+       ------------------------------ */
     [data-testid="stSidebar"] {
         background-color: #111111 !important;
     }
@@ -440,11 +456,34 @@ st.markdown(
     }
 
     label, p, span, div {
-        color: #FFFFFF !important;   /* Make text white */
+        color: #FFFFFF !important;
     }
 
     /* ------------------------------
-       BUTTONS — keep your pink theme
+       TEXT INPUTS / TEXTAREA / NUMBER INPUT
+       (Fix white backgrounds)
+       ------------------------------ */
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    .stTextInput>div>div>input,
+    .stTextArea>div>textarea {
+        background-color: #222222 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #444444 !important;
+        border-radius: 6px;
+    }
+
+    /* Hover + focus for a nice glow effect */
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    textarea:focus {
+        border-color: #DA10AB !important;  /* Pink focus glow */
+        outline: none !important;
+    }
+
+    /* ------------------------------
+       BUTTONS
        ------------------------------ */
     .stButton>button {
         background-color: #DA10AB !important;
@@ -460,25 +499,25 @@ st.markdown(
         border-color: #DA10AB !important;
     }
 
-    /* Filled slider track */
     .stSlider [data-baseweb="slider"] > div > div > div:nth-child(2) {
         background: linear-gradient(90deg, #06AFE6 0%, #DA10AB 100%) !important;
     }
 
-    /* Unfilled slider track */
     .stSlider [data-baseweb="slider"] > div > div > div:nth-child(3) {
         background-color: #333333 !important;
     }
 
     /* ------------------------------
-       DATAFRAME TABLE STYLING
+       DATAFRAMES / TABLES
        ------------------------------ */
     .stDataFrame, .stDataFrame tbody, .stDataFrame th, .stDataFrame td {
         background-color: #000000 !important;
         color: #FFFFFF !important;
     }
 
-    /* Scrollbars */
+    /* ------------------------------
+       SCROLLBAR THEME
+       ------------------------------ */
     ::-webkit-scrollbar {
         width: 12px;
     }
