@@ -605,6 +605,14 @@ st.download_button(
     mime="application/pdf"
 )
 
+st.markdown(
+    """
+You can use these scores to determine where targeted change management activity is most needed:
+- Higher **CC** and **OA** scores indicate higher overall change risk.  
+- Groups with higher **Degree of impact** and many **Aspects impacted** will likely need more support and tailored change plans.
+"""
+)
+
 # ------------------------------
 # AI-Generated Change Plan section
 # ------------------------------
@@ -661,12 +669,5 @@ if st.button("Generate AI Change Plan"):
         st.markdown("### Recommended Change Plan")
         st.write(plan)
 
-st.markdown(
-    """
-You can use these scores to determine where targeted change management activity is most needed:
-- Higher **CC** and **OA** scores indicate higher overall change risk.  
-- Groups with higher **Degree of impact** and many **Aspects impacted** will likely need more support and tailored change plans.
-"""
-)
 
 
