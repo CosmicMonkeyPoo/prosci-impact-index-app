@@ -769,16 +769,17 @@ if st.session_state.get("change_plan"):
     plan_pdf_buffer = build_change_plan_pdf(project_info, st.session_state["change_plan"])
     plan_pdf_bytes = plan_pdf_buffer.getvalue()
 
+    # Dynamic filename using project name
     plan_filename = (
-    f"{project_name.strip().replace(' ', '_')}_change_plan.pdf"
-    if project_name else
-    "change_plan.pdf"
-)
+        f"{project_name.strip().replace(' ', '_')}_change_plan.pdf"
+        if project_name else
+        "change_plan.pdf"
+    )
 
-st.download_button(
-    label="Download Change Plan as PDF",
-    data=plan_pdf_bytes,
-    file_name=plan_filename,
-    mime="application/pdf",
-)
+    st.download_button(
+        label="Download Change Plan as PDF",
+        data=plan_pdf_bytes,
+        file_name=plan_filename,
+        mime="application/pdf",
+    )
 
