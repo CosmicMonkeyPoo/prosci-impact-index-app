@@ -421,142 +421,92 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* ---------- Base layout & background ---------- */
+
+    /* ------------------ GLOBAL BACKGROUND ------------------ */
     html, body, [data-testid="stAppViewContainer"] {
-        background-color: #000000 !important;  /* pure black */
-        color: #FFFFFF !important;             /* default text white */
-    }
-
-    [data-testid="stAppViewContainer"] > .main {
         background-color: #000000 !important;
-    }
-
-    [data-testid="stSidebar"] {
-        background-color: #050505 !important;
-    }
-
-    /* ---------- Headings ---------- */
-    h1, h2, h3, h4, h5, h6 {
-        color: #06AFE6 !important;   /* your blue */
-    }
-
-    /* ---------- General text / labels ---------- */
-    label,
-    .stMarkdown,
-    .stTextInput label,
-    .stNumberInput label,
-    .stSlider label {
         color: #FFFFFF !important;
     }
 
-    /* ---------- Inputs & text areas ---------- */
-    input, textarea {
+    /* ------------------ HEADERS ------------------ */
+    h1, h2, h3, h4, h5, h6 {
+        background-color: #DA10AB !important;   /* pink header bar */
+        color: #FFFFFF !important;              /* white heading text */
+        padding: 8px 12px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    /* ------------------ BUTTONS ------------------ */
+    .stButton > button,
+    .stDownloadButton > button {
+        background-color: #DA10AB !important;
+        color: #FFFFFF !important;
+        border: 1px solid #DA10AB !important;
+    }
+
+    .stButton > button:hover,
+    .stDownloadButton > button:hover {
+        background-color: #b10b8a !important;
+        border-color: #b10b8a !important;
+    }
+
+    /* ------------------ INPUTS ------------------ */
+    input, textarea, select {
         background-color: #111111 !important;
         color: #FFFFFF !important;
         border: 1px solid #444444 !important;
     }
 
-    /* Placeholder / helper text */
     input::placeholder,
     textarea::placeholder {
-        color: #BBBBBB !important;  /* lighter grey so it’s visible on dark */
+        color: #DDDDDD !important;
     }
 
-    /* ---------- Buttons (all types) ---------- */
-    .stButton > button,
-    .stDownloadButton > button,
-    button[kind="primary"],
-    button[kind="secondary"] {
-        background-color: #DA10AB !important;   /* pink */
-        color: #FFFFFF !important;              /* white text */
-        border: 1px solid #DA10AB !important;
-        border-radius: 4px !important;
-    }
-
-    .stButton > button:hover,
-    .stDownloadButton > button:hover,
-    button[kind="primary"]:hover,
-    button[kind="secondary"]:hover {
-        background-color: #b10b8a !important;   /* darker pink on hover */
-        border-color: #b10b8a !important;
-        color: #FFFFFF !important;
-    }
-
-    /* ---------- Sliders (thumb + track) ---------- */
-    [data-baseweb="slider"] [role="slider"] {
-        background-color: #DA10AB !important;  /* pink thumb */
-        border-color: #DA10AB !important;
-    }
-
-    /* Filled track: blue → pink gradient */
-    [data-baseweb="slider"] > div > div > div:nth-child(2) {
-        background: linear-gradient(90deg, #06AFE6 0%, #DA10AB 100%) !important;
-    }
-
-    /* Unfilled track */
-    [data-baseweb="slider"] > div > div > div:nth-child(3) {
-        background-color: #333333 !important;
-    }
-
-    /* ---------- Expanders (“Details for Group #”) ---------- */
-    div[data-testid="stExpander"] {
+    /* ------------------ EXPANDERS ------------------ */
+    [data-testid="stExpander"] {
         background-color: #111111 !important;
         color: #FFFFFF !important;
         border: 1px solid #333333 !important;
     }
 
-    div[data-testid="stExpander"] summary {
-        background-color: #111111 !important;
+    [data-testid="stExpander"] summary {
         color: #FFFFFF !important;
+        background-color: #111111 !important;
     }
 
-    /* Make the little disclosure triangle visible on dark */
-    div[data-testid="stExpander"] summary svg {
-        fill: #FFFFFF !important;
-    }
-
-    /* ---------- DataFrames / tables ---------- */
-
-    /* st.dataframe */
+    /* ------------------ TABLES (DataFrames) ------------------ */
     [data-testid="stDataFrame"] table {
-        background-color: #111111 !important;
-        color: #FFFFFF !important;
+        background-color: #DA10AB !important;  /* pink table background */
+        color: #FFFFFF !important;             /* white text */
+        border-collapse: collapse !important;
     }
 
     [data-testid="stDataFrame"] th {
-        background-color: #222222 !important;
+        background-color: #DA10AB !important;
         color: #FFFFFF !important;
-        border-color: #555555 !important;
+        border: 1px solid #FFFFFF !important;
     }
 
     [data-testid="stDataFrame"] td {
-        background-color: #111111 !important;
+        background-color: #DA10AB !important;
         color: #FFFFFF !important;
-        border-color: #555555 !important;
+        border: 1px solid #FFFFFF !important;
     }
 
-    /* st.table (just in case you ever use it) */
-    [data-testid="stTable"] table {
-        background-color: #111111 !important;
-        color: #FFFFFF !important;
-    }
-
-    [data-testid="stTable"] th {
-        background-color: #222222 !important;
-        color: #FFFFFF !important;
-        border-color: #555555 !important;
-    }
-
+    /* ------------------ st.table fallback ------------------ */
+    [data-testid="stTable"] table,
+    [data-testid="stTable"] th,
     [data-testid="stTable"] td {
-        background-color: #111111 !important;
+        background-color: #DA10AB !important;
         color: #FFFFFF !important;
-        border-color: #555555 !important;
+        border: 1px solid #FFFFFF !important;
     }
+
     </style>
     """,
     unsafe_allow_html=True,
 )
-
 
 st.title("Prosci Impact Index – Impact Assessment App")
 
