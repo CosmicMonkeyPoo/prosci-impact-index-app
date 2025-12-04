@@ -417,168 +417,141 @@ st.set_page_config(
 
 # --- Custom colors: pink bars + blue headings ---
 # --- Custom colors: dark theme + pink/blue accents ---
+# --- Custom dark theme + colors ---
 st.markdown(
     """
     <style>
+    /* ---------- Base layout & background ---------- */
+    html, body, [data-testid="stAppViewContainer"] {
+        background-color: #000000 !important;  /* pure black */
+        color: #FFFFFF !important;             /* default text white */
+    }
 
-    /* --------------------------------------------------
-       GLOBAL BACKGROUND + TEXT
-    -------------------------------------------------- */
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
+    [data-testid="stAppViewContainer"] > .main {
         background-color: #000000 !important;
+    }
+
+    [data-testid="stSidebar"] {
+        background-color: #050505 !important;
+    }
+
+    /* ---------- Headings ---------- */
+    h1, h2, h3, h4, h5, h6 {
+        color: #06AFE6 !important;   /* your blue */
+    }
+
+    /* ---------- General text / labels ---------- */
+    label,
+    .stMarkdown,
+    .stTextInput label,
+    .stNumberInput label,
+    .stSlider label {
         color: #FFFFFF !important;
     }
 
-    /* --------------------------------------------------
-       TOP HEADER
-    -------------------------------------------------- */
-    [data-testid="stHeader"] {
-        background-color: #DA10AB !important;
-    }
-    [data-testid="stHeader"]::before {
-        box-shadow: none !important;
-    }
-
-    /* --------------------------------------------------
-       SIDEBAR
-    -------------------------------------------------- */
-    [data-testid="stSidebar"] {
+    /* ---------- Inputs & text areas ---------- */
+    input, textarea {
         background-color: #111111 !important;
-    }
-
-    /* --------------------------------------------------
-       HEADINGS + TEXT
-    -------------------------------------------------- */
-    h1, h2, h3, h4, h5, h6 { color: #06AFE6 !important; }
-    p, span, label, div, strong, em { color: #FFFFFF !important; }
-
-    /* Placeholder / helper text */
-    ::placeholder {
-        color: #BBBBBB !important;
-        opacity: 1 !important;
-    }
-    .stTextInput input::placeholder,
-    textarea::placeholder {
-        color: #BBBBBB !important;
-    }
-
-    /* --------------------------------------------------
-       INPUT FIELDS
-    -------------------------------------------------- */
-    input[type="text"],
-    input[type="number"],
-    textarea,
-    .stTextInput>div>div>input,
-    .stTextArea>div>textarea {
-        background-color: #222222 !important;
         color: #FFFFFF !important;
         border: 1px solid #444444 !important;
-        border-radius: 6px !important;
-    }
-    input:focus, textarea:focus {
-        border-color: #DA10AB !important;
-        outline: none !important;
     }
 
-    /* --------------------------------------------------
-       BUTTONS
-    -------------------------------------------------- */
-    .stButton>button,
-    button[kind="primary"] {
-        background-color: #DA10AB !important;
-        color: #FFFFFF !important;
+    /* Placeholder / helper text */
+    input::placeholder,
+    textarea::placeholder {
+        color: #BBBBBB !important;  /* lighter grey so it’s visible on dark */
+    }
+
+    /* ---------- Buttons (all types) ---------- */
+    .stButton > button,
+    .stDownloadButton > button,
+    button[kind="primary"],
+    button[kind="secondary"] {
+        background-color: #DA10AB !important;   /* pink */
+        color: #FFFFFF !important;              /* white text */
         border: 1px solid #DA10AB !important;
-        border-radius: 6px !important;
-    }
-    .stButton>button:hover {
-        background-color: #E53ABB !important;
+        border-radius: 4px !important;
     }
 
-    /* --------------------------------------------------
-       SLIDERS
-    -------------------------------------------------- */
-    .stSlider [role="slider"] {
-        background-color: #DA10AB !important;
+    .stButton > button:hover,
+    .stDownloadButton > button:hover,
+    button[kind="primary"]:hover,
+    button[kind="secondary"]:hover {
+        background-color: #b10b8a !important;   /* darker pink on hover */
+        border-color: #b10b8a !important;
+        color: #FFFFFF !important;
+    }
+
+    /* ---------- Sliders (thumb + track) ---------- */
+    [data-baseweb="slider"] [role="slider"] {
+        background-color: #DA10AB !important;  /* pink thumb */
         border-color: #DA10AB !important;
     }
-    .stSlider [data-baseweb="slider"] > div > div > div:nth-child(2) {
+
+    /* Filled track: blue → pink gradient */
+    [data-baseweb="slider"] > div > div > div:nth-child(2) {
         background: linear-gradient(90deg, #06AFE6 0%, #DA10AB 100%) !important;
     }
-    .stSlider [data-baseweb="slider"] > div > div > div:nth-child(3) {
+
+    /* Unfilled track */
+    [data-baseweb="slider"] > div > div > div:nth-child(3) {
         background-color: #333333 !important;
     }
 
-    /* --------------------------------------------------
-       EXPANDER HEADERS (group sections)
-    -------------------------------------------------- */
-    [data-testid="stExpander"] > details > summary {
+    /* ---------- Expanders (“Details for Group #”) ---------- */
+    div[data-testid="stExpander"] {
         background-color: #111111 !important;
         color: #FFFFFF !important;
-        border: 1px solid #444444 !important;
-        border-radius: 6px !important;
-        padding: 0.6rem 0.75rem !important;
+        border: 1px solid #333333 !important;
     }
-    [data-testid="stExpander"] > details > summary:hover {
+
+    div[data-testid="stExpander"] summary {
+        background-color: #111111 !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Make the little disclosure triangle visible on dark */
+    div[data-testid="stExpander"] summary svg {
+        fill: #FFFFFF !important;
+    }
+
+    /* ---------- DataFrames / tables ---------- */
+
+    /* st.dataframe */
+    [data-testid="stDataFrame"] table {
+        background-color: #111111 !important;
+        color: #FFFFFF !important;
+    }
+
+    [data-testid="stDataFrame"] th {
         background-color: #222222 !important;
+        color: #FFFFFF !important;
+        border-color: #555555 !important;
     }
 
-    /* --------------------------------------------------
-       TABLES (DataFrame + st.table)
-    -------------------------------------------------- */
-    /* Main container */
-    [data-testid="stDataFrame"] {
-        background-color: #000000 !important;
-    }
-
-    /* Handsontable (Streamlit uses this under the hood) */
-    .stDataFrame div[role="grid"],
-    .stDataFrame div[role="rowgroup"],
-    .stDataFrame div[role="alert"],
-    .stDataFrame div,
-    .stDataFrame table {
+    [data-testid="stDataFrame"] td {
         background-color: #111111 !important;
         color: #FFFFFF !important;
+        border-color: #555555 !important;
     }
 
-    .stDataFrame th {
-        background-color: #181818 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #333333 !important;
-    }
-    .stDataFrame td {
-        background-color: #111111 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #333333 !important;
-    }
-
-    /* st.table fallback */
+    /* st.table (just in case you ever use it) */
     [data-testid="stTable"] table {
         background-color: #111111 !important;
         color: #FFFFFF !important;
     }
+
     [data-testid="stTable"] th {
-        background-color: #181818 !important;
+        background-color: #222222 !important;
+        color: #FFFFFF !important;
+        border-color: #555555 !important;
     }
+
     [data-testid="stTable"] td {
         background-color: #111111 !important;
+        color: #FFFFFF !important;
+        border-color: #555555 !important;
     }
-
-    /* --------------------------------------------------
-       CUSTOM SCROLLBARS
-    -------------------------------------------------- */
-    ::-webkit-scrollbar {
-        width: 12px;
-    }
-    ::-webkit-scrollbar-track {
-        background: #222222;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #444444;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-        background: #666666;
-    }
-
     </style>
     """,
     unsafe_allow_html=True,
