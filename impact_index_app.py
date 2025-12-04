@@ -595,6 +595,16 @@ st.markdown(
 
 st.title("Prosci Impact Index – Impact Assessment App")
 
+# --- SIDEBAR: RESET CONTROL ---
+with st.sidebar:
+    st.header("App Controls")
+    st.write("Need to start over?")
+    if st.button("Reset / Clear All Data"):
+        # Clear all session state keys to reset inputs
+        for key in st.session_state.keys():
+            del st.session_state[key]
+        st.rerun()
+
 st.markdown(
     """
     This app is a simplified, Excel-free interface for the Prosci Impact Index.
