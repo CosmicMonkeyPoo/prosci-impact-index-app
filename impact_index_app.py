@@ -82,17 +82,23 @@ def generate_change_plan_with_gpt(project_info, group_impacts, oa_impacts=None):
         "oa_impacts": oa_impacts,
     }
 
+    # UPDATED PROMPT: Explicitly forbids ASCII tables to prevent PDF formatting issues
     system_msg = (
         "You are an expert change management consultant using the Prosci methodology. "
         "You specialize in translating change impact assessments into practical, "
-        "role-based change plans for complex organizations."
+        "role-based change plans for complex organizations.\n\n"
+        "IMPORTANT FORMATTING RULES:\n"
+        "1. Do NOT use Markdown tables (ASCII tables with | and -). They break the PDF rendering.\n"
+        "2. Instead of tables, use clear bulleted lists or grouped text sections.\n"
+        "3. Use '### ' (triple hash) for your Section Headers so we can style them.\n"
+        "4. Do not use HTML tags like <br>."
     )
 
     user_msg = (
         "Using the following change impact assessment data, create a concise, high-level change plan. "
         "The plan should:\n"
         "- Summarize the overall change and key drivers.\n"
-        "- Highlight which groups are most impacted and how.\n"
+        "- Highlight which groups are most impacted and how (Use a list, not a table).\n"
         "- Recommend tailored change tactics for each group based on their impact level.\n"
         "- Organize tactics into phases (for example: Awareness, Desire, Knowledge, Ability, Reinforcement).\n"
         "- Be written so that a project sponsor or change manager could use it to guide planning.\n\n"
@@ -101,7 +107,7 @@ def generate_change_plan_with_gpt(project_info, group_impacts, oa_impacts=None):
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-mini",  # you can change the model later if you want
+            model="gpt-4.1-mini", 
             messages=[
                 {"role": "system", "content": system_msg},
                 {"role": "user", "content": user_msg},
@@ -362,7 +368,7 @@ def build_change_plan_pdf(project_info, plan_text):
     """
     Build a PDF for the AI Change Plan.
     Theme: White background, Blue Headings.
-    Includes error handling to prevent XML parsing crashes.
+    Parses Markdown headers (###) into real PDF styles.
     """
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -374,6 +380,8 @@ def build_change_plan_pdf(project_info, plan_text):
     # Blue Headings
     title_style = ParagraphStyle('TitleCustom', parent=styles['Heading1'], textColor=colors.HexColor("#06AFE6"), spaceAfter=12)
     h2_style = ParagraphStyle('Heading2Custom', parent=styles['Heading2'], textColor=colors.HexColor("#06AFE6"), spaceBefore=12, spaceAfter=6)
+    
+    # Normal Text
     normal_style = styles['Normal']
     
     # --- Content ---
@@ -389,42 +397,51 @@ def build_change_plan_pdf(project_info, plan_text):
             
     story.append(Spacer(1, 12))
     
-    # The Plan
-    story.append(Paragraph("Recommended Change Plan", h2_style))
+    # The Plan Content Parsing
+    # We don't add a hardcoded header here because the AI usually provides its own headers.
     
     if plan_text:
-        # Split by newlines to keep paragraph structure
-        for part in plan_text.split('\n'):
-            part = part.strip()
-            if not part:
+        # Split by newlines
+        lines = plan_text.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
                 continue
 
-            # 1. Sanitize XML characters (Crucial step)
-            # This prevents < or > or & from confusing the PDF generator
-            clean_text = part.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            # 1. Clean up <br> tags and XML characters
+            clean_line = line.replace('<br>', '').replace('<br/>', '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
             
-            # 2. Try to apply bold formatting safely
-            # We use Regex to look for **text** and replace with <b>text</b>
-            formatted_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', clean_text)
+            # 2. Check for Markdown Headers (### Header)
+            if clean_line.startswith('###'):
+                # Strip the hashtags and whitespace
+                header_text = clean_line.replace('#', '').strip()
+                # Add as a Styled Heading
+                story.append(Paragraph(header_text, h2_style))
             
-            # 3. Add to PDF with Safety Catch
-            try:
-                # Try to add the formatted paragraph (with bolding)
-                story.append(Paragraph(formatted_text, normal_style))
-            except Exception:
-                # If ReportLab crashes due to weird tags, fallback to the Clean Text (no bold)
-                # This guarantees the PDF will still generate.
-                print(f"Formatting error on line: {clean_text}") 
-                story.append(Paragraph(clean_text, normal_style))
-            
-            story.append(Spacer(1, 6))
+            # 3. Check for Markdown Headers (## Header) - just in case
+            elif clean_line.startswith('##'):
+                header_text = clean_line.replace('#', '').strip()
+                story.append(Paragraph(header_text, h2_style))
+
+            # 4. Standard Text
+            else:
+                # Apply Bold Formatting safely (Regex)
+                formatted_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', clean_line)
+                
+                try:
+                    story.append(Paragraph(formatted_text, normal_style))
+                except Exception:
+                    story.append(Paragraph(clean_line, normal_style))
+                
+                # Add a small spacer after paragraphs for readability
+                story.append(Spacer(1, 6))
     else:
         story.append(Paragraph("No plan generated.", normal_style))
 
     doc.build(story)
     buffer.seek(0)
     return buffer
-
 
 # ------------- STREAMLIT APP -------------
 
