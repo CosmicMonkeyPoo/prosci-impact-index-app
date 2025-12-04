@@ -421,6 +421,9 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+h1 {
+    color: #DA10AB !important;
+}
     /* ---------- Base layout & background ---------- */
     html, body, [data-testid="stAppViewContainer"] {
         background-color: #000000 !important;  /* pure black */
