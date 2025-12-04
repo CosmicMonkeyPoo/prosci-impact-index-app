@@ -421,9 +421,14 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-h1 {
-    color: #DA10AB !important;
-}
+    /* ---------- Top header bar (very top of page) ---------- */
+    [data-testid="stHeader"] {
+        background-color: #DA10AB !important;  /* pink bar */
+    }
+    [data-testid="stHeader"] * {
+        color: #FFFFFF !important;  /* white icons/text in the top bar */
+    }
+
     /* ---------- Base layout & background ---------- */
     html, body, [data-testid="stAppViewContainer"] {
         background-color: #000000 !important;  /* pure black */
@@ -438,9 +443,9 @@ h1 {
         background-color: #050505 !important;
     }
 
-    /* ---------- Headings ---------- */
+    /* ---------- Headings in main content ---------- */
     h1, h2, h3, h4, h5, h6 {
-        color: #06AFE6 !important;   /* your blue */
+        color: #06AFE6 !important;   /* your blue for headings */
     }
 
     /* ---------- General text / labels ---------- */
@@ -462,7 +467,7 @@ h1 {
     /* Placeholder / helper text */
     input::placeholder,
     textarea::placeholder {
-        color: #BBBBBB !important;  /* lighter grey so it’s visible on dark */
+        color: #BBBBBB !important;  /* light grey on dark */
     }
 
     /* ---------- Buttons (all types) ---------- */
@@ -501,7 +506,7 @@ h1 {
         background-color: #333333 !important;
     }
 
-    /* ---------- Expanders (“Details for Group #”) ---------- */
+    /* ---------- Expanders (“Details for group #”) ---------- */
     div[data-testid="stExpander"] {
         background-color: #111111 !important;
         color: #FFFFFF !important;
@@ -513,48 +518,34 @@ h1 {
         color: #FFFFFF !important;
     }
 
-    /* Make the little disclosure triangle visible on dark */
     div[data-testid="stExpander"] summary svg {
         fill: #FFFFFF !important;
     }
 
     /* ---------- DataFrames / tables ---------- */
-
-    /* st.dataframe */
-    [data-testid="stDataFrame"] table {
-        background-color: #111111 !important;
-        color: #FFFFFF !important;
+    /* Overall container */
+    [data-testid="stDataFrame"] {
+        background-color: #000000 !important;   /* black bg */
+        color: #06AFE6 !important;              /* blue text */
     }
 
-    [data-testid="stDataFrame"] th {
-        background-color: #222222 !important;
-        color: #FFFFFF !important;
-        border-color: #555555 !important;
+    /* Headers + cells */
+    [data-testid="stDataFrame"] div[role="columnheader"],
+    [data-testid="stDataFrame"] div[role="gridcell"] {
+        background-color: #000000 !important;   /* black cells */
+        color: #06AFE6 !important;              /* blue text */
     }
 
-    [data-testid="stDataFrame"] td {
-        background-color: #111111 !important;
-        color: #FFFFFF !important;
-        border-color: #555555 !important;
+    /* Row borders = pink lines */
+    [data-testid="stDataFrame"] div[role="row"] {
+        border-bottom: 1px solid #DA10AB !important;  /* pink row lines */
     }
 
-    /* st.table (just in case you ever use it) */
-    [data-testid="stTable"] table {
-        background-color: #111111 !important;
-        color: #FFFFFF !important;
+    /* Header row slightly thicker pink line */
+    [data-testid="stDataFrame"] div[role="columnheader"] {
+        border-bottom: 2px solid #DA10AB !important;
     }
 
-    [data-testid="stTable"] th {
-        background-color: #222222 !important;
-        color: #FFFFFF !important;
-        border-color: #555555 !important;
-    }
-
-    [data-testid="stTable"] td {
-        background-color: #111111 !important;
-        color: #FFFFFF !important;
-        border-color: #555555 !important;
-    }
     </style>
     """,
     unsafe_allow_html=True,
