@@ -446,7 +446,7 @@ def build_change_plan_pdf(project_info, plan_text):
 # ------------- STREAMLIT APP -------------
 
 st.set_page_config(
-    page_title="Prosci Impact Index – Impact Assessment",
+    page_title="Change Impact Assessment Tool",
     layout="wide"
 )
 
@@ -591,7 +591,7 @@ st.markdown(
 )
 
 
-st.title("Prosci Impact Index – Impact Assessment App")
+st.title("Change Impact Assessment Tool")
 
 # --- SIDEBAR: RESET CONTROL ---
 with st.sidebar:
