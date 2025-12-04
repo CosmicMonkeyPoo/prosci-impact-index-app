@@ -1,5 +1,6 @@
 import io
 import textwrap
+import re  
 
 import streamlit as st
 import pandas as pd
@@ -7,11 +8,13 @@ import pandas as pd
 import json
 from openai import OpenAI
 
+# Updated imports for the PDF generation
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
 
 # ------------- CONFIG AND QUESTIONS -------------
 
@@ -198,6 +201,7 @@ def style_impact_table(df: pd.DataFrame):
         ])
     )
 
+
 def build_pdf_summary(
     project_name,
     sponsor_name,
@@ -358,6 +362,7 @@ def build_change_plan_pdf(project_info, plan_text):
     """
     Build a PDF for the AI Change Plan.
     Theme: White background, Blue Headings.
+    Includes error handling to prevent XML parsing crashes.
     """
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -391,12 +396,28 @@ def build_change_plan_pdf(project_info, plan_text):
         # Split by newlines to keep paragraph structure
         for part in plan_text.split('\n'):
             part = part.strip()
-            if part:
-                # Basic handling for Markdown bold (**) -> Reportlab bold (<b>)
-                # This is a simple replacement for basic bolding
-                formatted_part = part.replace("**", "<b>").replace("**", "</b>")
-                story.append(Paragraph(formatted_part, normal_style))
-                story.append(Spacer(1, 6))
+            if not part:
+                continue
+
+            # 1. Sanitize XML characters (Crucial step)
+            # This prevents < or > or & from confusing the PDF generator
+            clean_text = part.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            
+            # 2. Try to apply bold formatting safely
+            # We use Regex to look for **text** and replace with <b>text</b>
+            formatted_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', clean_text)
+            
+            # 3. Add to PDF with Safety Catch
+            try:
+                # Try to add the formatted paragraph (with bolding)
+                story.append(Paragraph(formatted_text, normal_style))
+            except Exception:
+                # If ReportLab crashes due to weird tags, fallback to the Clean Text (no bold)
+                # This guarantees the PDF will still generate.
+                print(f"Formatting error on line: {clean_text}") 
+                story.append(Paragraph(clean_text, normal_style))
+            
+            story.append(Spacer(1, 6))
     else:
         story.append(Paragraph("No plan generated.", normal_style))
 
