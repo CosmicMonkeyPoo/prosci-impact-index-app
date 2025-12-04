@@ -145,7 +145,7 @@ def compute_group_impact(groups_data):
             "Group name": g["name"],
             "Employees": g["employees"],
             "Aspects impacted (out of 10)": aspects_impacted,
-            "Degree of impact (0-5)": round(degree_impact, 2),
+            "Degree of impact (0-5)": round(degree_impact, 1), # Rounded to nearest 10th
         })
 
     if not results:
@@ -163,12 +163,14 @@ def style_impact_table(df: pd.DataFrame):
       - black background
       - blue borders
       - pink text
+      - Number formatting (1 decimal place)
     """
     # Define the blue border string for reuse
     blue_border = "1px solid #06AFE6"
     
     return (
         df.style
+        .format({"Degree of impact (0-5)": "{:.1f}"})  # Force 1 decimal place (e.g., 3.0)
         .set_properties(**{
             "background-color": "#000000",
             "color": "#DA10AB",           # Pink text
@@ -193,7 +195,6 @@ def style_impact_table(df: pd.DataFrame):
             }
         ])
     )
-
 
 def build_pdf_summary(
     project_name,
