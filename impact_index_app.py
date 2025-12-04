@@ -160,40 +160,40 @@ def compute_group_impact(groups_data):
 def style_impact_table(df: pd.DataFrame):
     """
     Style a DataFrame with:
-      - black background (cells AND headers)
+      - black background
       - blue borders
       - pink text
     """
     # Define the blue border string for reuse
     blue_border = "1px solid #06AFE6"
     
-    # Create the Styler object
-    styler = df.style.set_properties(**{
-        "background-color": "#000000",
-        "color": "#DA10AB",           # Pink text
-        "border": blue_border,        # Blue border for cells
-    })
-    
-    # Explicitly target headers (th) and the index to ensure they are black
-    styler.set_table_styles([
-        {
-            "selector": "th", 
-            "props": [
-                ("background-color", "#000000"), 
-                ("color", "#DA10AB"), 
-                ("border", blue_border)
-            ]
-        },
-        {
-            "selector": "tr", 
-            "props": [("background-color", "#000000")]
-        },
-        {
-            "selector": "td", 
-            "props": [("border", blue_border)]
-        }
-    ])
-    return styler
+    return (
+        df.style
+        .set_properties(**{
+            "background-color": "#000000",
+            "color": "#DA10AB",           # Pink text
+            "border": blue_border,        # Blue border
+        })
+        .set_table_styles([
+            {
+                "selector": "th", 
+                "props": [
+                    ("background-color", "#000000"), 
+                    ("color", "#DA10AB"), 
+                    ("border", blue_border)
+                ]
+            },
+            {
+                "selector": "tr", 
+                "props": [("background-color", "#000000")]
+            },
+            {
+                "selector": "td", 
+                "props": [("border", blue_border)]
+            }
+        ])
+    )
+
 
 def build_pdf_summary(
     project_name,
@@ -559,42 +559,32 @@ st.markdown(
         fill: #FFFFFF !important;
     }
 
-   /* ---------- DataFrames / tables ---------- */
-    
-    /* Force the main container to be black */
-    [data-testid="stDataFrame"] {
+    /* ---------- Tables (replaces DataFrame styling) ---------- */
+    /* Target the st.table specifically */
+    [data-testid="stTable"] {
         background-color: #000000 !important;
+        width: 100%;
     }
-
-    /* Target the table headers specifically to remove white background */
-    [data-testid="stDataFrame"] th,
-    [data-testid="stDataFrame"] thead tr th {
+    
+    /* Force the table structure to be black */
+    [data-testid="stTable"] table {
+        background-color: #000000 !important;
+        border-collapse: collapse !important;
+    }
+    
+    /* Target headers (th) - Black bg, Pink Text, Blue Border */
+    [data-testid="stTable"] th {
         background-color: #000000 !important;
         color: #DA10AB !important;            /* Pink text */
         border: 1px solid #06AFE6 !important; /* Blue border */
+        font-weight: bold;
     }
-
-    /* Target the data cells */
-    [data-testid="stDataFrame"] td, 
-    [data-testid="stDataFrame"] tbody tr td {
+    
+    /* Target cells (td) - Black bg, Pink Text, Blue Border */
+    [data-testid="stTable"] td {
         background-color: #000000 !important;
         color: #DA10AB !important;            /* Pink text */
         border: 1px solid #06AFE6 !important; /* Blue border */
-    }
-
-    /* Target the interactive grid cells (if Streamlit renders as a grid) */
-    [data-testid="stDataFrame"] div[role="columnheader"] {
-        background-color: #000000 !important;
-        color: #DA10AB !important;
-        border-bottom: 2px solid #06AFE6 !important; 
-        border-right: 1px solid #06AFE6 !important;
-    }
-    
-    [data-testid="stDataFrame"] div[role="gridcell"] {
-        background-color: #000000 !important;
-        color: #DA10AB !important;
-        border-bottom: 1px solid #06AFE6 !important;
-        border-right: 1px solid #06AFE6 !important;
     }
 
     </style>
@@ -754,7 +744,8 @@ if group_df.empty:
     st.info("Fill in at least one group with some non-zero impact scores to see results.")
 else:
     styled_group_df = style_impact_table(group_df)
-    st.dataframe(styled_group_df, use_container_width=True)
+    # Using st.table instead of st.dataframe for perfect color control
+    st.table(styled_group_df)
 
     # ---------- EXCEL EXPORT (Group Impact + OA) ----------
     excel_buffer = io.BytesIO()
@@ -808,7 +799,8 @@ with col_b:
         ).head(5)
         top_display = top_groups[["Group name", "Employees", "Degree of impact (0-5)"]]
         styled_top = style_impact_table(top_display)
-        st.dataframe(styled_top, use_container_width=True)
+        # Using st.table instead of st.dataframe for perfect color control
+        st.table(styled_top)
     else:
         st.write("No group impact data yet.")
 
@@ -936,4 +928,3 @@ if st.session_state.get("change_plan"):
         file_name=plan_filename,
         mime="application/pdf",
     )
-
