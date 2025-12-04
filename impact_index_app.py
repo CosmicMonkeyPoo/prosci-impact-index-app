@@ -160,43 +160,40 @@ def compute_group_impact(groups_data):
 def style_impact_table(df: pd.DataFrame):
     """
     Style a DataFrame with:
-      - black background
-      - blue borders (CHANGED)
-      - pink text (CHANGED)
+      - black background (cells AND headers)
+      - blue borders
+      - pink text
     """
-    return (
-        df.style
-        .set_table_styles([
-            {
-                "selector": "table",
-                "props": [
-                    ("border-collapse", "collapse"),
-                    ("background-color", "#000000"),
-                ],
-            },
-            {
-                "selector": "th",
-                "props": [
-                    ("background-color", "#000000"),
-                    ("color", "#DA10AB"),       # Pink text
-                    ("border", "1px solid #06AFE6")  # Blue border
-                ],
-            },
-            {
-                "selector": "td",
-                "props": [
-                    ("background-color", "#000000"),
-                    ("color", "#DA10AB"),       # Pink text
-                    ("border", "1px solid #06AFE6")  # Blue border
-                ],
-            },
-        ])
-        .set_properties(**{
-            "background-color": "#000000",
-            "color": "#DA10AB",           # Pink text
-            "border": "1px solid #06AFE6", # Blue border
-        })
-    )
+    # Define the blue border string for reuse
+    blue_border = "1px solid #06AFE6"
+    
+    # Create the Styler object
+    styler = df.style.set_properties(**{
+        "background-color": "#000000",
+        "color": "#DA10AB",           # Pink text
+        "border": blue_border,        # Blue border for cells
+    })
+    
+    # Explicitly target headers (th) and the index to ensure they are black
+    styler.set_table_styles([
+        {
+            "selector": "th", 
+            "props": [
+                ("background-color", "#000000"), 
+                ("color", "#DA10AB"), 
+                ("border", blue_border)
+            ]
+        },
+        {
+            "selector": "tr", 
+            "props": [("background-color", "#000000")]
+        },
+        {
+            "selector": "td", 
+            "props": [("border", blue_border)]
+        }
+    ])
+    return styler
 
 def build_pdf_summary(
     project_name,
@@ -563,27 +560,41 @@ st.markdown(
     }
 
    /* ---------- DataFrames / tables ---------- */
-    /* Overall container */
+    
+    /* Force the main container to be black */
     [data-testid="stDataFrame"] {
-        background-color: #000000 !important;   /* black bg */
-        color: #DA10AB !important;              /* Pink text */
+        background-color: #000000 !important;
     }
 
-    /* Headers + cells */
-    [data-testid="stDataFrame"] div[role="columnheader"],
-    [data-testid="stDataFrame"] div[role="gridcell"] {
-        background-color: #000000 !important;   /* black cells */
-        color: #DA10AB !important;              /* Pink text */
+    /* Target the table headers specifically to remove white background */
+    [data-testid="stDataFrame"] th,
+    [data-testid="stDataFrame"] thead tr th {
+        background-color: #000000 !important;
+        color: #DA10AB !important;            /* Pink text */
+        border: 1px solid #06AFE6 !important; /* Blue border */
     }
 
-    /* Row borders = Blue lines */
-    [data-testid="stDataFrame"] div[role="row"] {
-        border-bottom: 1px solid #06AFE6 !important;  /* Blue row lines */
+    /* Target the data cells */
+    [data-testid="stDataFrame"] td, 
+    [data-testid="stDataFrame"] tbody tr td {
+        background-color: #000000 !important;
+        color: #DA10AB !important;            /* Pink text */
+        border: 1px solid #06AFE6 !important; /* Blue border */
     }
 
-    /* Header row slightly thicker Blue line */
+    /* Target the interactive grid cells (if Streamlit renders as a grid) */
     [data-testid="stDataFrame"] div[role="columnheader"] {
-        border-bottom: 2px solid #06AFE6 !important;
+        background-color: #000000 !important;
+        color: #DA10AB !important;
+        border-bottom: 2px solid #06AFE6 !important; 
+        border-right: 1px solid #06AFE6 !important;
+    }
+    
+    [data-testid="stDataFrame"] div[role="gridcell"] {
+        background-color: #000000 !important;
+        color: #DA10AB !important;
+        border-bottom: 1px solid #06AFE6 !important;
+        border-right: 1px solid #06AFE6 !important;
     }
 
     </style>
