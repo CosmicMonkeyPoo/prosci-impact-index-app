@@ -157,6 +157,47 @@ def compute_group_impact(groups_data):
     df.index.name = "#"
     return df
 
+def style_impact_table(df: pd.DataFrame):
+    """
+    Style a DataFrame with:
+      - black background
+      - pink borders
+      - blue text (headers and data)
+    """
+    return (
+        df.style
+        .set_table_styles([
+            {
+                "selector": "table",
+                "props": [
+                    ("border-collapse", "collapse"),
+                    ("background-color", "#000000"),
+                ],
+            },
+            {
+                "selector": "th",
+                "props": [
+                    ("background-color", "#000000"),
+                    ("color", "#06AFE6"),          # blue text
+                    ("border", "1px solid #DA10AB")  # pink border
+                ],
+            },
+            {
+                "selector": "td",
+                "props": [
+                    ("background-color", "#000000"),
+                    ("color", "#06AFE6"),          # blue text
+                    ("border", "1px solid #DA10AB")  # pink border
+                ],
+            },
+        ])
+        .set_properties(**{
+            "background-color": "#000000",
+            "color": "#06AFE6",
+            "border": "1px solid #DA10AB",
+        })
+    )
+
 
 def build_pdf_summary(
     project_name,
@@ -702,7 +743,8 @@ st.subheader("Group impact summary")
 if group_df.empty:
     st.info("Fill in at least one group with some non-zero impact scores to see results.")
 else:
-    st.dataframe(group_df, use_container_width=True)
+    styled_group_df = style_impact_table(group_df)
+    st.dataframe(styled_group_df, use_container_width=True)
 
     # ---------- EXCEL EXPORT (Group Impact + OA) ----------
     excel_buffer = io.BytesIO()
@@ -754,7 +796,9 @@ with col_b:
             by="Degree of impact (0-5)",
             ascending=False
         ).head(5)
-        st.write(top_groups[["Group name", "Employees", "Degree of impact (0-5)"]])
+        top_display = top_groups[["Group name", "Employees", "Degree of impact (0-5)"]]
+        styled_top = style_impact_table(top_display)
+        st.dataframe(styled_top, use_container_width=True)
     else:
         st.write("No group impact data yet.")
 
