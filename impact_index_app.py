@@ -7,9 +7,11 @@ import pandas as pd
 import json
 from openai import OpenAI
 
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
 # ------------- CONFIG AND QUESTIONS -------------
 
@@ -213,235 +215,192 @@ def build_pdf_summary(
     group_df,
 ):
     """
-    Build a summary-only PDF including:
-      - Project information
-      - CC & OA summary
-      - CC & OA items with score >= 3
-      - High-impact groups (Degree of impact >= 3)
+    Build a PDF summary using ReportLab Platypus for proper tables and styling.
+    Theme: White background, Blue Headings, Pink Table Text, Blue Borders.
     """
     buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
-
-    def draw_wrapped(text, x, y, max_width, leading=12, font_name="Helvetica", font_size=10):
-        """Draw wrapped text and return updated y position."""
-        c.setFont(font_name, font_size)
-        for line in textwrap.wrap(text, width=max_width):
-            c.drawString(x, y, line)
-            y -= leading
-        return y
-
-    y = height - 50
-
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    story = []
+    
+    # --- Styles ---
+    styles = getSampleStyleSheet()
+    
+    # Custom Heading (Blue #06AFE6)
+    title_style = ParagraphStyle(
+        'TitleCustom', 
+        parent=styles['Heading1'], 
+        textColor=colors.HexColor("#06AFE6"),
+        spaceAfter=12
+    )
+    h2_style = ParagraphStyle(
+        'Heading2Custom', 
+        parent=styles['Heading2'], 
+        textColor=colors.HexColor("#06AFE6"),
+        spaceBefore=12, 
+        spaceAfter=6
+    )
+    
+    # Normal Text (Black for readability on white paper)
+    normal_style = styles['Normal']
+    
+    # Pink Text for Table Content
+    pink_text_style = ParagraphStyle(
+        'PinkText',
+        parent=styles['Normal'],
+        textColor=colors.HexColor("#DA10AB")
+    )
+    
+    # --- Content ---
+    
     # Title
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, y, "Change Impact Assessment – Summary")
-    y -= 30
+    story.append(Paragraph("Change Impact Assessment – Summary", title_style))
+    
+    # 1. Project Info
+    story.append(Paragraph("1. Project information", h2_style))
+    
+    # Helper to add bold label + text
+    def add_info_line(label, value):
+        if value:
+            text = f"<b>{label}</b> {value}"
+            story.append(Paragraph(text, normal_style))
+            story.append(Spacer(1, 4))
 
-    # Project information
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Project information")
-    y -= 18
-
-    c.setFont("Helvetica", 10)
-    if project_name:
-        y = draw_wrapped(f"Project: {project_name}", 60, y, 90)
-    if org_name:
-        y = draw_wrapped(f"Organization / Dept: {org_name}", 60, y, 90)
-    if sponsor_name:
-        y = draw_wrapped(f"Sponsor: {sponsor_name}", 60, y, 90)
-    if assessment_owner:
-        y = draw_wrapped(f"Assessment completed by: {assessment_owner}", 60, y, 90)
-
+    add_info_line("Project:", project_name)
+    add_info_line("Organization / Dept:", org_name)
+    add_info_line("Sponsor:", sponsor_name)
+    add_info_line("Assessment completed by:", assessment_owner)
+    
     if project_desc:
-        y -= 6
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(50, y, "Change description")
-        y -= 14
-        y = draw_wrapped(project_desc, 60, y, 95)
+        story.append(Spacer(1, 6))
+        story.append(Paragraph("<b>Change description:</b>", normal_style))
+        story.append(Paragraph(project_desc, normal_style))
 
-    y -= 10
+    story.append(Spacer(1, 12))
 
-    # CC summary
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Change Characteristics (CC)")
-    y -= 16
-    c.setFont("Helvetica", 10)
-    c.drawString(
-        60, y,
-        f"Total CC score: {cc_total} / {cc_max} ({cc_pct:.1f}%)"
-    )
-    y -= 18
-
-    # CC items with score >= 3
-    cc_high = []
-    for i, q in enumerate(CC_QUESTIONS, start=1):
-        score = cc_answers.get(f"CC_{i}", 0)
-        if score >= 3:
-            cc_high.append((i, q, score))
-
+    # 2. Change Characteristics
+    story.append(Paragraph("2. Change Characteristics (CC)", h2_style))
+    story.append(Paragraph(f"<b>Total Score:</b> {cc_total} / {cc_max} ({cc_pct:.1f}%)", normal_style))
+    
+    # CC High Impact
+    cc_high = [q for i, q in enumerate(CC_QUESTIONS, 1) if cc_answers.get(f"CC_{i}", 0) >= 3]
     if cc_high:
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(60, y, "Areas of higher change impact (CC items scored 3 or above):")
-        y -= 14
-        c.setFont("Helvetica", 10)
-        for i, q, score in cc_high:
-            line = f"- [{score}] {i}) {q}"
-            y = draw_wrapped(line, 70, y, 90)
-            if y < 70:
-                c.showPage()
-                y = height - 50
+        story.append(Spacer(1, 6))
+        story.append(Paragraph("<b>High impact areas (Score 3+):</b>", normal_style))
+        for item in cc_high:
+            story.append(Paragraph(f"• {item}", normal_style))
     else:
-        c.setFont("Helvetica", 10)
-        c.drawString(60, y, "No CC items scored 3 or above.")
-        y -= 16
+        story.append(Paragraph("No items scored 3 or above.", normal_style))
 
-    y -= 6
-
-    # OA summary
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Organizational Attributes (OA)")
-    y -= 16
-    c.setFont("Helvetica", 10)
-    c.drawString(
-        60, y,
-        f"Total OA score: {oa_total} / {oa_max} ({oa_pct:.1f}%)"
-    )
-    y -= 18
-
-    # OA items with score >= 3 (higher risk)
-    oa_high = []
-    for i, q in enumerate(OA_QUESTIONS, start=1):
-        score = oa_answers.get(f"OA_{i}", 0)
-        if score >= 3:
-            oa_high.append((i, q, score))
-
+    # 3. Organizational Attributes
+    story.append(Paragraph("3. Organizational Attributes (OA)", h2_style))
+    story.append(Paragraph(f"<b>Total Score:</b> {oa_total} / {oa_max} ({oa_pct:.1f}%)", normal_style))
+    
+    # OA High Impact
+    oa_high = [q for i, q in enumerate(OA_QUESTIONS, 1) if oa_answers.get(f"OA_{i}", 0) >= 3]
     if oa_high:
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(60, y, "Areas of higher organizational risk (OA items scored 3 or above):")
-        y -= 14
-        c.setFont("Helvetica", 10)
-        for i, q, score in oa_high:
-            line = f"- [{score}] {i}) {q}"
-            y = draw_wrapped(line, 70, y, 90)
-            if y < 70:
-                c.showPage()
-                y = height - 50
+        story.append(Spacer(1, 6))
+        story.append(Paragraph("<b>High risk areas (Score 3+):</b>", normal_style))
+        for item in oa_high:
+            story.append(Paragraph(f"• {item}", normal_style))
     else:
-        c.setFont("Helvetica", 10)
-        c.drawString(60, y, "No OA items scored 3 or above.")
-        y -= 16
+        story.append(Paragraph("No items scored 3 or above.", normal_style))
+        
+    story.append(Spacer(1, 12))
 
-    y -= 6
-
-        # Group impact summary – all groups
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Group Impact Summary")
-    y -= 16
-    c.setFont("Helvetica", 10)
-
+    # 4. Group Impact Summary (THE TABLE)
+    story.append(Paragraph("4. Group Impact Summary", h2_style))
+    
     if group_df is not None and not group_df.empty:
-        c.drawString(
-            60, y,
-            "Impacted groups and their degree of impact:"
-        )
-        y -= 14
-
-        # Iterate over all groups (already indexed 1,2,3... in the app)
-        for idx, row in group_df.iterrows():
-            line = (
-                f"- {row['Group name']} "
-                f"(Employees: {row['Employees']}, "
-                f"Aspects impacted: {row['Aspects impacted (out of 10)']}, "
-                f"Degree of impact: {row['Degree of impact (0-5)']})"
-            )
-            y = draw_wrapped(line, 70, y, 90)
-            if y < 70:
-                c.showPage()
-                y = height - 50
+        # Construct Table Data
+        # Headers
+        table_data = [[
+            Paragraph("<b>Group Name</b>", pink_text_style),
+            Paragraph("<b>Employees</b>", pink_text_style),
+            Paragraph("<b>Aspects (10)</b>", pink_text_style),
+            Paragraph("<b>Impact (0-5)</b>", pink_text_style)
+        ]]
+        
+        # Rows
+        for _, row in group_df.iterrows():
+            # Round impact to 1 decimal
+            impact_val = f"{row['Degree of impact (0-5)']:.1f}"
+            
+            row_data = [
+                Paragraph(str(row['Group name']), pink_text_style),
+                Paragraph(str(row['Employees']), pink_text_style),
+                Paragraph(str(row['Aspects impacted (out of 10)']), pink_text_style),
+                Paragraph(impact_val, pink_text_style)
+            ]
+            table_data.append(row_data)
+        
+        # Create Table
+        # Adjust col widths as needed
+        t = Table(table_data, colWidths=[3.0*inch, 1.0*inch, 1.2*inch, 1.2*inch])
+        
+        # Apply the "Webpage Look" (White BG, Pink Text, Blue Grid)
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.white),       # White Background
+            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor("#06AFE6")), # Blue Borders
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('ALIGN', (1, 0), (-1, -1), 'CENTER'),                # Center numbers
+        ]))
+        
+        story.append(t)
     else:
-        c.drawString(60, y, "No group impact data entered.")
-        y -= 16
-
-
-    # Close out
-    c.showPage()
-    c.save()
+        story.append(Paragraph("No group data entered.", normal_style))
+        
+    # Build
+    doc.build(story)
     buffer.seek(0)
     return buffer
 
 def build_change_plan_pdf(project_info, plan_text):
     """
-    Build a PDF containing:
-      - Project information (if available)
-      - The AI-generated change plan text
+    Build a PDF for the AI Change Plan.
+    Theme: White background, Blue Headings.
     """
     buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
-
-    def draw_wrapped(text, x, y, max_width, leading=12, font_name="Helvetica", font_size=10):
-        """Draw wrapped text and return updated y position."""
-        c.setFont(font_name, font_size)
-        for line in textwrap.wrap(text, width=max_width):
-            c.drawString(x, y, line)
-            y -= leading
-        return y
-
-    y = height - 50
-
-    # Title
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, y, "AI-Generated Change Plan")
-    y -= 30
-
-    # Project info (if available)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Project information")
-    y -= 18
-    c.setFont("Helvetica", 10)
-
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    story = []
+    
+    # --- Styles ---
+    styles = getSampleStyleSheet()
+    
+    # Blue Headings
+    title_style = ParagraphStyle('TitleCustom', parent=styles['Heading1'], textColor=colors.HexColor("#06AFE6"), spaceAfter=12)
+    h2_style = ParagraphStyle('Heading2Custom', parent=styles['Heading2'], textColor=colors.HexColor("#06AFE6"), spaceBefore=12, spaceAfter=6)
+    normal_style = styles['Normal']
+    
+    # --- Content ---
+    story.append(Paragraph("AI-Generated Change Plan", title_style))
+    
+    # Project Info
+    story.append(Paragraph("Project Information", h2_style))
     if project_info:
         if project_info.get("project_name"):
-            y = draw_wrapped(f"Project: {project_info['project_name']}", 60, y, 90)
-        if project_info.get("organization_name"):
-            y = draw_wrapped(f"Organization / Dept: {project_info['organization_name']}", 60, y, 90)
+            story.append(Paragraph(f"<b>Project:</b> {project_info['project_name']}", normal_style))
         if project_info.get("sponsor_name"):
-            y = draw_wrapped(f"Sponsor: {project_info['sponsor_name']}", 60, y, 90)
-        if project_info.get("assessment_owner"):
-            y = draw_wrapped(f"Assessment completed by: {project_info['assessment_owner']}", 60, y, 90)
-
-        if project_info.get("description"):
-            y -= 6
-            c.setFont("Helvetica-Bold", 11)
-            c.drawString(50, y, "Change description")
-            y -= 14
-            y = draw_wrapped(project_info["description"], 60, y, 95)
-
-    y -= 10
-
-    # Plan body
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Recommended Change Plan")
-    y -= 18
-
-    c.setFont("Helvetica", 10)
-    if not plan_text:
-        y = draw_wrapped("No plan text generated.", 60, y, 95)
+            story.append(Paragraph(f"<b>Sponsor:</b> {project_info['sponsor_name']}", normal_style))
+            
+    story.append(Spacer(1, 12))
+    
+    # The Plan
+    story.append(Paragraph("Recommended Change Plan", h2_style))
+    
+    if plan_text:
+        # Split by newlines to keep paragraph structure
+        for part in plan_text.split('\n'):
+            part = part.strip()
+            if part:
+                # Basic handling for Markdown bold (**) -> Reportlab bold (<b>)
+                # This is a simple replacement for basic bolding
+                formatted_part = part.replace("**", "<b>").replace("**", "</b>")
+                story.append(Paragraph(formatted_part, normal_style))
+                story.append(Spacer(1, 6))
     else:
-        # Allow for long text with page breaks
-        for paragraph in plan_text.split("\n"):
-            paragraph = paragraph.strip()
-            if not paragraph:
-                y -= 6
-                continue
-            y = draw_wrapped(paragraph, 60, y, 95)
-            if y < 70:
-                c.showPage()
-                y = height - 50
+        story.append(Paragraph("No plan generated.", normal_style))
 
-    c.showPage()
-    c.save()
+    doc.build(story)
     buffer.seek(0)
     return buffer
 
