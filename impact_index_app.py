@@ -161,8 +161,8 @@ def style_impact_table(df: pd.DataFrame):
     """
     Style a DataFrame with:
       - black background
-      - pink borders
-      - blue text (headers and data)
+      - blue borders (CHANGED)
+      - pink text (CHANGED)
     """
     return (
         df.style
@@ -178,26 +178,25 @@ def style_impact_table(df: pd.DataFrame):
                 "selector": "th",
                 "props": [
                     ("background-color", "#000000"),
-                    ("color", "#06AFE6"),          # blue text
-                    ("border", "1px solid #DA10AB")  # pink border
+                    ("color", "#DA10AB"),       # Pink text
+                    ("border", "1px solid #06AFE6")  # Blue border
                 ],
             },
             {
                 "selector": "td",
                 "props": [
                     ("background-color", "#000000"),
-                    ("color", "#06AFE6"),          # blue text
-                    ("border", "1px solid #DA10AB")  # pink border
+                    ("color", "#DA10AB"),       # Pink text
+                    ("border", "1px solid #06AFE6")  # Blue border
                 ],
             },
         ])
         .set_properties(**{
             "background-color": "#000000",
-            "color": "#06AFE6",
-            "border": "1px solid #DA10AB",
+            "color": "#DA10AB",           # Pink text
+            "border": "1px solid #06AFE6", # Blue border
         })
     )
-
 
 def build_pdf_summary(
     project_name,
@@ -563,28 +562,28 @@ st.markdown(
         fill: #FFFFFF !important;
     }
 
-    /* ---------- DataFrames / tables ---------- */
+   /* ---------- DataFrames / tables ---------- */
     /* Overall container */
     [data-testid="stDataFrame"] {
         background-color: #000000 !important;   /* black bg */
-        color: #06AFE6 !important;              /* blue text */
+        color: #DA10AB !important;              /* Pink text */
     }
 
     /* Headers + cells */
     [data-testid="stDataFrame"] div[role="columnheader"],
     [data-testid="stDataFrame"] div[role="gridcell"] {
         background-color: #000000 !important;   /* black cells */
-        color: #06AFE6 !important;              /* blue text */
+        color: #DA10AB !important;              /* Pink text */
     }
 
-    /* Row borders = pink lines */
+    /* Row borders = Blue lines */
     [data-testid="stDataFrame"] div[role="row"] {
-        border-bottom: 1px solid #DA10AB !important;  /* pink row lines */
+        border-bottom: 1px solid #06AFE6 !important;  /* Blue row lines */
     }
 
-    /* Header row slightly thicker pink line */
+    /* Header row slightly thicker Blue line */
     [data-testid="stDataFrame"] div[role="columnheader"] {
-        border-bottom: 2px solid #DA10AB !important;
+        border-bottom: 2px solid #06AFE6 !important;
     }
 
     </style>
